@@ -1,0 +1,29 @@
+project:
+  name: "dmp_admin_v2"
+  port: 8080
+  mode: "debug"
+
+doris:
+  host: 172.25.114.132
+  user: root
+  password: "123456"
+  port: 9030
+  httpport: 8030
+  database: dmp_center
+  charset: utf8mb4
+  parse_time: true
+  loc: Local
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: "3600s"
+
+logger:
+  level: "debug"
+  filename: "logs/dmp.log"
+  max_size: 100
+  max_backups: 5
+  max_age: 30
+  compress: true
+
+ai:
+  mock_mode: false
