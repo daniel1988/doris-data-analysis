@@ -1,0 +1,76 @@
+# DMP Admin V2 项目开发规范
+
+## 1. 代码规模与文件管理
+- **文件长度限制**：单个后端 Go 文件或前端 Vue/TS 文件原则上不应超过 **500 行**。
+- **职责单一性**：
+    - **后端**：Controller (API) 层只负责参数绑定与响应分发；Service 层负责核心业务逻辑；Model 层负责结构定义。
+    - **前端**：复杂逻辑应通过 **Composables** (Vue 3 Composition API) 进行抽离；单个组件应保持功能单一，超过 300 行的 UI 模板应考虑拆分子组件。
+
+## 2. 命名规范
+- **后端 (Golang)**：
+    - 导出变量/函数：`PascalCase` (大驼峰)。
+    - 私有变量/函数：`camelCase` (小驼峰)。
+    - 数据库字段/JSON Tag：`snake_case` (下划线命名)。
+- **前端 (TypeScript/Vue)**：
+    - 组件文件：`PascalCase.vue`。
+    - 变量与函数：`camelCase`。
+    - 类型与接口：`PascalCase`。
+    - 目录名：尽量使用小写下划线或连字符。
+
+## 3. API 与 JSON 规范
+- **请求/响应格式**：
+    - 前后端交互必须统一使用 **JSON** 格式。
+    - JSON 字段命名必须统一使用 **`snake_case`** (下划线)。
+- **统一响应结构**：
+    - 所有 API 返回必须遵循 `internal/model/response.go` 中的 `Response` 结构：
+      ```json
+      {
+        "code": 200,
+        "data": { ... },
+        "message": "success"
+      }
+      ```
+- **参数校验**：
+    - 后端必须使用 `ShouldBindJSON` 或 `Query` 进行参数校验。
+    - 前端在发起请求前应进行基础的字段校验。
+
+## 4. 错误处理
+- **后端**：禁止忽略错误，必须通过 `model.Error` 系列函数返回明确的状态码和错误信息。
+- **前端**：统一使用 `ElMessage` 提示接口返回的错误信息。
+
+## 5. 项目结构
+- **配置管理**：所有环境变量和全局参数必须通过 `config/config.yaml` 结合 `viper` 管理。
+- **日志管理**：使用 `common.Logger` 进行日志输出，禁止使用原生的 `fmt.Println`。
+
+## 6. 前端分析模块逻辑规范
+- **核心常量使用**：
+    - **表名**：使用 `TableNames` 常量（如 `TableNames.EVENT`）而非硬编码字符串。
+    - **公式与操作符**：必须使用 `FormulaTypes` 和 `OperatorTypes` 枚举进行类型判断。
+    - **可视化模式**：使用 `VizModes` 枚举（如 `VizModes.Line`, `VizModes.Table`）。
+    - **特殊字段**：使用 `FormulaDefaults` 中的 `TOTAL_TIMES_FIELD` (`__TOTAL_TIMES__`) 和 `TOTAL_USERS_FIELD` (`__TOTAL_USERS__`)。
+- **组件通信 (Context Pattern)**：
+    - **规范**：所有分析模块（Event, Scatter, Funnel 等）必须使用 `Provide/Inject` 模式通过 `ANALYSIS_CONTEXT_KEY` 共享状态。
+    - **结构**：共享状态应遵循 `AnalysisContext` 接口，包含 `state`（响应式数据）和 `actions`（操作方法）。
+- **指标规范化 (Metric Normalization)**：
+    - **核心规范**：在处理所有分析模块的指标字段时，**必须**使用 `frontend/src/views/analytics/utils/payloadNormalizer.ts` 中的 `normalizeMetricField` 函数。
+    - **处理场景**：
+        - 事件变更 (Event Change)：当用户更改所选事件时，应调用该函数将指标重置为“总次数”并规范化。
+        - 指标应用 (Apply Formula)：当用户在属性选择器中选择特定属性或特殊字段时，必须通过该函数进行规范化。
+    - **逻辑说明**：该函数负责将前端占位符自动转换为后端实际所需的 `field`、`table` 和 `formula` 配置。
+
+## 7. 前端页面与组件规范
+- **技术栈**：
+    - 必须统一使用 **Vue 3** + **TypeScript** + **Composition API** (`<script setup lang="ts">`)。
+    - 状态管理：全局状态使用 **Pinia**，复杂业务逻辑抽取为 **Composables** (`useXxx`)。
+- **UI 组件库**：
+    - 统一使用 **Element Plus** 组件库。
+    - 图标统一使用 `@element-plus/icons-vue`。
+- **组件结构**：
+    - 代码顺序：`<template>` -> `<script setup>` -> `<style scoped>`。
+    - 样式规范：必须使用 `scoped` 属性，推荐使用 SCSS/CSS 变量。
+- **组件通信**：
+    - **Props**：必须使用 TypeScript 接口定义类型，如 `defineProps<{ modelValue: string }>()`。
+    - **Emits**：必须显式定义所有触发的事件，如 `defineEmits<{ (e: 'update:modelValue', val: string): void }>()`。
+- **响应式布局**：
+    - 页面级组件应优先使用 Flex/Grid 布局实现自适应。
+    - 避免硬编码固定像素值，确保在不同分辨率下显示正常。

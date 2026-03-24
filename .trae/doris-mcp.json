@@ -1,0 +1,7 @@
+{
+    "mcpServers": {
+        "doris-http": {
+            "url": "http://172.25.114.132:3000/mcp"
+        }
+    }
+}
